@@ -1,84 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Player, ChatMessage, Position, Room } from '@/types/game';
-
-const ROOM_WIDTH = 12;
-const ROOM_HEIGHT = 10;
-
-const createInitialRoom = (): Room => {
-  const floor: string[][] = [];
-  for (let y = 0; y < ROOM_HEIGHT; y++) {
-    const row: string[] = [];
-    for (let x = 0; x < ROOM_WIDTH; x++) {
-      if (x === 0 || x === ROOM_WIDTH - 1 || y === 0 || y === ROOM_HEIGHT - 1) {
-        row.push('wall');
-      } else {
-        row.push('floor');
-      }
-    }
-    floor.push(row);
-  }
-  return {
-    id: 'tavern-1',
-    name: 'Taverna do Dragão',
-    width: ROOM_WIDTH,
-    height: ROOM_HEIGHT,
-    floor,
-    furniture: [
-      { id: 'table1', type: 'table', position: { x: 3, y: 3 }, rotation: 0 },
-      { id: 'chair1', type: 'chair', position: { x: 2, y: 3 }, rotation: 0 },
-      { id: 'chair2', type: 'chair', position: { x: 4, y: 3 }, rotation: 180 },
-      { id: 'torch1', type: 'torch', position: { x: 1, y: 1 }, rotation: 0 },
-      { id: 'torch2', type: 'torch', position: { x: 10, y: 1 }, rotation: 0 },
-      { id: 'barrel1', type: 'barrel', position: { x: 9, y: 7 }, rotation: 0 },
-      { id: 'chest1', type: 'chest', position: { x: 8, y: 2 }, rotation: 0 },
-    ],
-    players: [],
-  };
-};
-
-const createNPCs = (): Player[] => [
-  {
-    id: 'npc-1',
-    name: 'Barkeeper',
-    position: { x: 6, y: 2 },
-    direction: 'down',
-    isWalking: false,
-    outfit: { body: '#8B4513', hair: '#2F1810', clothes: '#4A3728' },
-    level: 50,
-    health: 1000,
-    maxHealth: 1000,
-    mana: 500,
-    maxMana: 500,
-  },
-  {
-    id: 'npc-2',
-    name: 'Knight',
-    position: { x: 2, y: 6 },
-    direction: 'right',
-    isWalking: false,
-    outfit: { body: '#D4A574', hair: '#1a1a1a', clothes: '#6B6B6B' },
-    level: 120,
-    health: 2500,
-    maxHealth: 2500,
-    mana: 800,
-    maxMana: 800,
-  },
-  {
-    id: 'npc-3',
-    name: 'Mage',
-    position: { x: 8, y: 5 },
-    direction: 'left',
-    isWalking: false,
-    outfit: { body: '#E8D4B8', hair: '#C0C0C0', clothes: '#4A148C' },
-    level: 200,
-    health: 1800,
-    maxHealth: 1800,
-    mana: 3000,
-    maxMana: 3000,
-  },
-];
+import { Player, ChatMessage, Position, Room, InventoryItem, DroppedItem } from '@/types/game';
+import { WORLD_ROOMS, INITIAL_ITEMS, NPC_DATA } from '@/data/worldData';
 
 export const useGameState = () => {
+  const [currentRoomId, setCurrentRoomId] = useState('tavern');
   const [player, setPlayer] = useState<Player>({
     id: 'player-1',
     name: 'Aventureiro',
@@ -93,11 +18,16 @@ export const useGameState = () => {
     maxMana: 200,
   });
 
-  const [room] = useState<Room>(createInitialRoom);
-  const [npcs] = useState<Player[]>(createNPCs);
+  const [inventory, setInventory] = useState<InventoryItem[]>(INITIAL_ITEMS);
+  const [droppedItems, setDroppedItems] = useState<DroppedItem[]>([]);
+  const [gold, setGold] = useState(1250);
+
+  const room = WORLD_ROOMS[currentRoomId];
+  const npcs = NPC_DATA[currentRoomId as keyof typeof NPC_DATA] || [];
+
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: '1', playerId: 'npc-1', playerName: 'Barkeeper', message: 'Bem-vindo à Taverna do Dragão!', timestamp: Date.now() - 5000 },
-    { id: '2', playerId: 'npc-2', playerName: 'Knight', message: 'Cuidado nas masmorras ao norte.', timestamp: Date.now() - 3000 },
+    { id: '1', playerId: 'system', playerName: 'Sistema', message: 'Bem-vindo ao Dragon\'s Realm!', timestamp: Date.now() - 5000 },
+    { id: '2', playerId: 'system', playerName: 'Sistema', message: 'Use WASD para mover. Explore os portais!', timestamp: Date.now() - 3000 },
   ]);
 
   const isValidPosition = useCallback((pos: Position): boolean => {
@@ -105,11 +35,29 @@ export const useGameState = () => {
       return false;
     }
     const hasFurniture = room.furniture.some(
-      f => f.position.x === pos.x && f.position.y === pos.y && f.type !== 'torch'
+      f => f.position.x === pos.x && f.position.y === pos.y && f.type !== 'torch' && f.type !== 'mushroom'
     );
     const hasNPC = npcs.some(n => n.position.x === pos.x && n.position.y === pos.y);
     return !hasFurniture && !hasNPC;
   }, [room, npcs]);
+
+  const checkPortal = useCallback((pos: Position) => {
+    const portal = room.portals.find(p => p.position.x === pos.x && p.position.y === pos.y);
+    if (portal) {
+      setCurrentRoomId(portal.targetRoomId);
+      setPlayer(prev => ({
+        ...prev,
+        position: portal.targetPosition,
+      }));
+      setMessages(prev => [...prev.slice(-50), {
+        id: Date.now().toString(),
+        playerId: 'system',
+        playerName: 'Sistema',
+        message: `Você entrou em: ${WORLD_ROOMS[portal.targetRoomId].name}`,
+        timestamp: Date.now(),
+      }]);
+    }
+  }, [room.portals]);
 
   const movePlayer = useCallback((direction: 'up' | 'down' | 'left' | 'right') => {
     setPlayer(prev => {
@@ -122,6 +70,7 @@ export const useGameState = () => {
       }
 
       if (isValidPosition(newPos)) {
+        setTimeout(() => checkPortal(newPos), 100);
         return { ...prev, position: newPos, direction, isWalking: true };
       }
       return { ...prev, direction };
@@ -130,7 +79,107 @@ export const useGameState = () => {
     setTimeout(() => {
       setPlayer(prev => ({ ...prev, isWalking: false }));
     }, 200);
-  }, [isValidPosition]);
+  }, [isValidPosition, checkPortal]);
+
+  const useItem = useCallback((itemId: string) => {
+    const item = inventory.find(i => i.id === itemId);
+    if (!item) return;
+
+    if (item.type === 'consumable' && item.effect) {
+      setPlayer(prev => ({
+        ...prev,
+        health: Math.min(prev.maxHealth, prev.health + (item.effect?.health || 0)),
+        mana: Math.min(prev.maxMana, prev.mana + (item.effect?.mana || 0)),
+      }));
+
+      setInventory(prev => {
+        const newInventory = prev.map(i => {
+          if (i.id === itemId) {
+            return { ...i, quantity: i.quantity - 1 };
+          }
+          return i;
+        }).filter(i => i.quantity > 0);
+        return newInventory;
+      });
+
+      setMessages(prev => [...prev.slice(-50), {
+        id: Date.now().toString(),
+        playerId: 'system',
+        playerName: 'Sistema',
+        message: `Você usou ${item.name}! ${item.effect.health ? `+${item.effect.health} HP` : ''} ${item.effect.mana ? `+${item.effect.mana} MP` : ''}`,
+        timestamp: Date.now(),
+      }]);
+    } else if (item.type === 'equipment') {
+      setMessages(prev => [...prev.slice(-50), {
+        id: Date.now().toString(),
+        playerId: 'system',
+        playerName: 'Sistema',
+        message: `Você equipou ${item.name}!`,
+        timestamp: Date.now(),
+      }]);
+    }
+  }, [inventory]);
+
+  const dropItem = useCallback((itemId: string) => {
+    const item = inventory.find(i => i.id === itemId);
+    if (!item) return;
+
+    const droppedItem: DroppedItem = {
+      id: `dropped-${Date.now()}`,
+      item: { ...item, quantity: 1 },
+      position: { ...player.position },
+      roomId: currentRoomId,
+    };
+
+    setDroppedItems(prev => [...prev, droppedItem]);
+
+    setInventory(prev => {
+      return prev.map(i => {
+        if (i.id === itemId) {
+          return { ...i, quantity: i.quantity - 1 };
+        }
+        return i;
+      }).filter(i => i.quantity > 0);
+    });
+
+    setMessages(prev => [...prev.slice(-50), {
+      id: Date.now().toString(),
+      playerId: 'system',
+      playerName: 'Sistema',
+      message: `Você dropou ${item.name} no chão!`,
+      timestamp: Date.now(),
+    }]);
+  }, [inventory, player.position, currentRoomId]);
+
+  const pickupItem = useCallback((droppedItemId: string) => {
+    const droppedItem = droppedItems.find(d => d.id === droppedItemId);
+    if (!droppedItem || droppedItem.roomId !== currentRoomId) return;
+
+    const distance = Math.abs(droppedItem.position.x - player.position.x) + 
+                     Math.abs(droppedItem.position.y - player.position.y);
+    if (distance > 1) return;
+
+    setInventory(prev => {
+      const existing = prev.find(i => i.name === droppedItem.item.name);
+      if (existing) {
+        return prev.map(i => i.name === droppedItem.item.name 
+          ? { ...i, quantity: i.quantity + droppedItem.item.quantity }
+          : i
+        );
+      }
+      return [...prev, { ...droppedItem.item, id: `item-${Date.now()}` }];
+    });
+
+    setDroppedItems(prev => prev.filter(d => d.id !== droppedItemId));
+
+    setMessages(prev => [...prev.slice(-50), {
+      id: Date.now().toString(),
+      playerId: 'system',
+      playerName: 'Sistema',
+      message: `Você pegou ${droppedItem.item.name}!`,
+      timestamp: Date.now(),
+    }]);
+  }, [droppedItems, currentRoomId, player.position]);
 
   const sendMessage = useCallback((message: string) => {
     const newMessage: ChatMessage = {
@@ -142,6 +191,34 @@ export const useGameState = () => {
     };
     setMessages(prev => [...prev.slice(-50), newMessage]);
   }, [player]);
+
+  const giveItem = useCallback((item: InventoryItem) => {
+    setInventory(prev => {
+      const existing = prev.find(i => i.name === item.name);
+      if (existing) {
+        return prev.map(i => i.name === item.name 
+          ? { ...i, quantity: i.quantity + item.quantity }
+          : i
+        );
+      }
+      return [...prev, { ...item, id: `item-${Date.now()}` }];
+    });
+  }, []);
+
+  const setPlayerStats = useCallback((stats: Partial<Player>) => {
+    setPlayer(prev => ({ ...prev, ...stats }));
+  }, []);
+
+  const teleportTo = useCallback((roomId: string, position: Position) => {
+    if (WORLD_ROOMS[roomId]) {
+      setCurrentRoomId(roomId);
+      setPlayer(prev => ({ ...prev, position }));
+    }
+  }, []);
+
+  const addGold = useCallback((amount: number) => {
+    setGold(prev => prev + amount);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -168,19 +245,39 @@ export const useGameState = () => {
           e.preventDefault();
           movePlayer('right');
           break;
+        case 'e':
+          const nearbyItem = droppedItems.find(d => 
+            d.roomId === currentRoomId &&
+            Math.abs(d.position.x - player.position.x) + Math.abs(d.position.y - player.position.y) <= 1
+          );
+          if (nearbyItem) {
+            pickupItem(nearbyItem.id);
+          }
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [movePlayer]);
+  }, [movePlayer, droppedItems, currentRoomId, player.position, pickupItem]);
 
   return {
     player,
     room,
     npcs,
     messages,
+    inventory,
+    gold,
+    droppedItems: droppedItems.filter(d => d.roomId === currentRoomId),
+    currentRoomId,
     movePlayer,
     sendMessage,
+    useItem,
+    dropItem,
+    pickupItem,
+    giveItem,
+    setPlayerStats,
+    teleportTo,
+    addGold,
   };
 };
