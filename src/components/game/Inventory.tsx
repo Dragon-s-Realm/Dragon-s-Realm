@@ -1,24 +1,14 @@
-import { useState } from 'react';
 import { Package, Coins } from 'lucide-react';
+import { InventoryItem } from '@/types/game';
 
-interface InventoryItem {
-  id: string;
-  name: string;
-  icon: string;
-  quantity: number;
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+interface InventoryProps {
+  items: InventoryItem[];
+  gold: number;
+  selectedItem: InventoryItem | null;
+  onSelectItem: (item: InventoryItem | null) => void;
+  onUseItem: (itemId: string) => void;
+  onDropItem: (itemId: string) => void;
 }
-
-const INITIAL_ITEMS: InventoryItem[] = [
-  { id: '1', name: 'Poção de Vida', icon: '🧪', quantity: 5, rarity: 'common' },
-  { id: '2', name: 'Poção de Mana', icon: '💧', quantity: 3, rarity: 'common' },
-  { id: '3', name: 'Espada de Ferro', icon: '⚔️', quantity: 1, rarity: 'uncommon' },
-  { id: '4', name: 'Escudo de Madeira', icon: '🛡️', quantity: 1, rarity: 'common' },
-  { id: '5', name: 'Anel Mágico', icon: '💍', quantity: 1, rarity: 'rare' },
-  { id: '6', name: 'Pergaminho', icon: '📜', quantity: 2, rarity: 'uncommon' },
-  { id: '7', name: 'Tocha', icon: '🔥', quantity: 10, rarity: 'common' },
-  { id: '8', name: 'Amuleto Antigo', icon: '📿', quantity: 1, rarity: 'epic' },
-];
 
 const RARITY_COLORS: Record<string, string> = {
   common: 'border-muted-foreground',
@@ -28,10 +18,20 @@ const RARITY_COLORS: Record<string, string> = {
   legendary: 'border-gold',
 };
 
-export const Inventory = () => {
-  const [items] = useState<InventoryItem[]>(INITIAL_ITEMS);
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const gold = 1250;
+export const Inventory = ({ items, gold, selectedItem, onSelectItem, onUseItem, onDropItem }: InventoryProps) => {
+  const handleUse = () => {
+    if (selectedItem) {
+      onUseItem(selectedItem.id);
+      onSelectItem(null);
+    }
+  };
+
+  const handleDrop = () => {
+    if (selectedItem) {
+      onDropItem(selectedItem.id);
+      onSelectItem(null);
+    }
+  };
 
   return (
     <div className="pixel-panel p-2 flex flex-col h-full">
@@ -60,7 +60,7 @@ export const Inventory = () => {
                 ${selectedItem?.id === item?.id ? 'ring-1 ring-primary' : ''}
               `}
               style={{ borderWidth: item ? 2 : 1 }}
-              onClick={() => item && setSelectedItem(item)}
+              onClick={() => item && onSelectItem(item)}
             >
               {item && (
                 <>
@@ -92,9 +92,25 @@ export const Inventory = () => {
               {selectedItem.name}
             </span>
           </div>
+          {selectedItem.effect && (
+            <p className="text-[6px] text-muted-foreground mb-1">
+              {selectedItem.effect.health && `+${selectedItem.effect.health} HP `}
+              {selectedItem.effect.mana && `+${selectedItem.effect.mana} MP`}
+            </p>
+          )}
           <div className="flex gap-1">
-            <button className="pixel-btn text-[6px] flex-1">Usar</button>
-            <button className="pixel-btn text-[6px] flex-1">Dropar</button>
+            <button 
+              className="pixel-btn text-[6px] flex-1"
+              onClick={handleUse}
+            >
+              {selectedItem.type === 'consumable' ? 'Usar' : 'Equipar'}
+            </button>
+            <button 
+              className="pixel-btn text-[6px] flex-1"
+              onClick={handleDrop}
+            >
+              Dropar
+            </button>
           </div>
         </div>
       )}

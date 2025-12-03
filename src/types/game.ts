@@ -36,6 +36,14 @@ export interface Furniture {
   rotation: number;
 }
 
+export interface Portal {
+  id: string;
+  position: Position;
+  targetRoomId: string;
+  targetPosition: Position;
+  label: string;
+}
+
 export interface Room {
   id: string;
   name: string;
@@ -44,4 +52,26 @@ export interface Room {
   floor: string[][];
   furniture: Furniture[];
   players: Player[];
+  portals: Portal[];
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  icon: string;
+  quantity: number;
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  type: 'consumable' | 'equipment' | 'material' | 'quest';
+  effect?: {
+    health?: number;
+    mana?: number;
+    buff?: string;
+  };
+}
+
+export interface DroppedItem {
+  id: string;
+  item: InventoryItem;
+  position: Position;
+  roomId: string;
 }
