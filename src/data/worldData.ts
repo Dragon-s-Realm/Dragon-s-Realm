@@ -1,5 +1,10 @@
+// Importa os tipos utilizados na estrutura do jogo
 import { Room, InventoryItem } from '@/types/game';
 
+/**
+ * Função auxiliar para criar uma sala (room) do mapa.
+ * Gera automaticamente as paredes e o piso internamente.
+ */
 const createRoom = (
   id: string,
   name: string,
@@ -8,106 +13,153 @@ const createRoom = (
   furniture: Room['furniture'],
   portals: Room['portals']
 ): Room => {
+
+  // Matriz representando o piso da sala (floor)
   const floor: string[][] = [];
+
+  // Gera a matriz linha por linha
   for (let y = 0; y < height; y++) {
     const row: string[] = [];
+
     for (let x = 0; x < width; x++) {
+      // Cria paredes nas bordas da sala
       if (x === 0 || x === width - 1 || y === 0 || y === height - 1) {
         row.push('wall');
       } else {
+        // Piso normal dentro da área interna
         row.push('floor');
       }
     }
+
     floor.push(row);
   }
+
+  // Retorna o objeto que representa a sala final
   return { id, name, width, height, floor, furniture, players: [], portals };
 };
 
+/**
+ * WORLD_ROOMS contém todas as salas existentes no mundo.
+ * Cada sala é criada com a função 'createRoom' para manter consistência.
+ */
 export const WORLD_ROOMS: Record<string, Room> = {
-  'tavern': createRoom('tavern', 'Taverna do Dragão', 12, 10, [
-    { id: 'table1', type: 'table', position: { x: 3, y: 3 }, rotation: 0 },
-    { id: 'chair1', type: 'chair', position: { x: 2, y: 3 }, rotation: 0 },
-    { id: 'chair2', type: 'chair', position: { x: 4, y: 3 }, rotation: 180 },
-    { id: 'torch1', type: 'torch', position: { x: 1, y: 1 }, rotation: 0 },
-    { id: 'torch2', type: 'torch', position: { x: 10, y: 1 }, rotation: 0 },
-    { id: 'barrel1', type: 'barrel', position: { x: 9, y: 7 }, rotation: 0 },
-    { id: 'chest1', type: 'chest', position: { x: 8, y: 2 }, rotation: 0 },
-  ], [
-    { id: 'portal-town', position: { x: 6, y: 9 }, targetRoomId: 'town-square', targetPosition: { x: 6, y: 1 }, label: '→ Praça' },
-    { id: 'portal-cellar', position: { x: 1, y: 5 }, targetRoomId: 'cellar', targetPosition: { x: 8, y: 3 }, label: '↓ Porão' },
-  ]),
 
-  'town-square': createRoom('town-square', 'Praça Central', 16, 12, [
-    { id: 'fountain', type: 'fountain', position: { x: 8, y: 6 }, rotation: 0 },
-    { id: 'bench1', type: 'bench', position: { x: 4, y: 5 }, rotation: 0 },
-    { id: 'bench2', type: 'bench', position: { x: 12, y: 5 }, rotation: 0 },
-    { id: 'lamp1', type: 'torch', position: { x: 3, y: 3 }, rotation: 0 },
-    { id: 'lamp2', type: 'torch', position: { x: 13, y: 3 }, rotation: 0 },
-    { id: 'lamp3', type: 'torch', position: { x: 3, y: 9 }, rotation: 0 },
-    { id: 'lamp4', type: 'torch', position: { x: 13, y: 9 }, rotation: 0 },
-  ], [
-    { id: 'portal-tavern', position: { x: 6, y: 1 }, targetRoomId: 'tavern', targetPosition: { x: 6, y: 8 }, label: '→ Taverna' },
-    { id: 'portal-forest', position: { x: 15, y: 6 }, targetRoomId: 'forest', targetPosition: { x: 1, y: 5 }, label: '→ Floresta' },
-    { id: 'portal-shop', position: { x: 1, y: 6 }, targetRoomId: 'shop', targetPosition: { x: 8, y: 5 }, label: '→ Loja' },
-    { id: 'portal-dungeon', position: { x: 8, y: 11 }, targetRoomId: 'dungeon-entrance', targetPosition: { x: 5, y: 1 }, label: '↓ Masmorra' },
-  ]),
+  // ----- TAVERNA -----
+  'tavern': createRoom('tavern', 'Taverna do Dragão', 12, 10,
+    [
+      { id: 'table1', type: 'table', position: { x: 3, y: 3 }, rotation: 0 },
+      { id: 'chair1', type: 'chair', position: { x: 2, y: 3 }, rotation: 0 },
+      { id: 'chair2', type: 'chair', position: { x: 4, y: 3 }, rotation: 180 },
+      { id: 'torch1', type: 'torch', position: { x: 1, y: 1 }, rotation: 0 },
+      { id: 'torch2', type: 'torch', position: { x: 10, y: 1 }, rotation: 0 },
+      { id: 'barrel1', type: 'barrel', position: { x: 9, y: 7 }, rotation: 0 },
+      { id: 'chest1', type: 'chest', position: { x: 8, y: 2 }, rotation: 0 },
+    ],
+    [
+      // Portais que ligam esta sala a outras
+      { id: 'portal-town', position: { x: 6, y: 9 }, targetRoomId: 'town-square', targetPosition: { x: 6, y: 1 }, label: '→ Praça' },
+      { id: 'portal-cellar', position: { x: 1, y: 5 }, targetRoomId: 'cellar', targetPosition: { x: 8, y: 3 }, label: '↓ Porão' },
+    ]
+  ),
 
-  'forest': createRoom('forest', 'Floresta Sombria', 14, 10, [
-    { id: 'tree1', type: 'tree', position: { x: 3, y: 2 }, rotation: 0 },
-    { id: 'tree2', type: 'tree', position: { x: 7, y: 3 }, rotation: 0 },
-    { id: 'tree3', type: 'tree', position: { x: 11, y: 2 }, rotation: 0 },
-    { id: 'tree4', type: 'tree', position: { x: 5, y: 7 }, rotation: 0 },
-    { id: 'tree5', type: 'tree', position: { x: 10, y: 6 }, rotation: 0 },
-    { id: 'mushroom1', type: 'mushroom', position: { x: 4, y: 5 }, rotation: 0 },
-    { id: 'mushroom2', type: 'mushroom', position: { x: 8, y: 8 }, rotation: 0 },
-  ], [
-    { id: 'portal-town', position: { x: 1, y: 5 }, targetRoomId: 'town-square', targetPosition: { x: 14, y: 6 }, label: '← Praça' },
-    { id: 'portal-cave', position: { x: 12, y: 8 }, targetRoomId: 'cave', targetPosition: { x: 2, y: 5 }, label: '→ Caverna' },
-  ]),
+  // ----- PRAÇA CENTRAL -----
+  'town-square': createRoom('town-square', 'Praça Central', 16, 12,
+    [
+      { id: 'fountain', type: 'fountain', position: { x: 8, y: 6 }, rotation: 0 },
+      { id: 'bench1', type: 'bench', position: { x: 4, y: 5 }, rotation: 0 },
+      { id: 'bench2', type: 'bench', position: { x: 12, y: 5 }, rotation: 0 },
+      { id: 'lamp1', type: 'torch', position: { x: 3, y: 3 }, rotation: 0 },
+      { id: 'lamp2', type: 'torch', position: { x: 13, y: 3 }, rotation: 0 },
+      { id: 'lamp3', type: 'torch', position: { x: 3, y: 9 }, rotation: 0 },
+      { id: 'lamp4', type: 'torch', position: { x: 13, y: 9 }, rotation: 0 },
+    ],
+    [
+      { id: 'portal-tavern', position: { x: 6, y: 1 }, targetRoomId: 'tavern', targetPosition: { x: 6, y: 8 }, label: '→ Taverna' },
+      { id: 'portal-forest', position: { x: 15, y: 6 }, targetRoomId: 'forest', targetPosition: { x: 1, y: 5 }, label: '→ Floresta' },
+      { id: 'portal-shop', position: { x: 1, y: 6 }, targetRoomId: 'shop', targetPosition: { x: 8, y: 5 }, label: '→ Loja' },
+      { id: 'portal-dungeon', position: { x: 8, y: 11 }, targetRoomId: 'dungeon-entrance', targetPosition: { x: 5, y: 1 }, label: '↓ Masmorra' },
+    ]
+  ),
 
-  'cave': createRoom('cave', 'Caverna Escura', 10, 8, [
-    { id: 'rock1', type: 'rock', position: { x: 3, y: 2 }, rotation: 0 },
-    { id: 'rock2', type: 'rock', position: { x: 7, y: 3 }, rotation: 0 },
-    { id: 'rock3', type: 'rock', position: { x: 5, y: 6 }, rotation: 0 },
-    { id: 'torch-c1', type: 'torch', position: { x: 1, y: 1 }, rotation: 0 },
-    { id: 'chest-cave', type: 'chest', position: { x: 8, y: 1 }, rotation: 0 },
-  ], [
-    { id: 'portal-forest', position: { x: 1, y: 5 }, targetRoomId: 'forest', targetPosition: { x: 11, y: 8 }, label: '← Floresta' },
-  ]),
+  // ----- FLORESTA -----
+  'forest': createRoom('forest', 'Floresta Sombria', 14, 10,
+    [
+      { id: 'tree1', type: 'tree', position: { x: 3, y: 2 }, rotation: 0 },
+      { id: 'tree2', type: 'tree', position: { x: 7, y: 3 }, rotation: 0 },
+      { id: 'tree3', type: 'tree', position: { x: 11, y: 2 }, rotation: 0 },
+      { id: 'tree4', type: 'tree', position: { x: 5, y: 7 }, rotation: 0 },
+      { id: 'tree5', type: 'tree', position: { x: 10, y: 6 }, rotation: 0 },
+      { id: 'mushroom1', type: 'mushroom', position: { x: 4, y: 5 }, rotation: 0 },
+      { id: 'mushroom2', type: 'mushroom', position: { x: 8, y: 8 }, rotation: 0 },
+    ],
+    [
+      { id: 'portal-town', position: { x: 1, y: 5 }, targetRoomId: 'town-square', targetPosition: { x: 14, y: 6 }, label: '← Praça' },
+      { id: 'portal-cave', position: { x: 12, y: 8 }, targetRoomId: 'cave', targetPosition: { x: 2, y: 5 }, label: '→ Caverna' },
+    ]
+  ),
 
-  'shop': createRoom('shop', 'Loja de Itens', 10, 8, [
-    { id: 'counter', type: 'table', position: { x: 5, y: 2 }, rotation: 0 },
-    { id: 'shelf1', type: 'shelf', position: { x: 2, y: 1 }, rotation: 0 },
-    { id: 'shelf2', type: 'shelf', position: { x: 8, y: 1 }, rotation: 0 },
-    { id: 'barrel-shop', type: 'barrel', position: { x: 1, y: 6 }, rotation: 0 },
-    { id: 'chest-shop', type: 'chest', position: { x: 8, y: 6 }, rotation: 0 },
-  ], [
-    { id: 'portal-town', position: { x: 5, y: 7 }, targetRoomId: 'town-square', targetPosition: { x: 2, y: 6 }, label: '← Praça' },
-  ]),
+  // ----- CAVERNA -----
+  'cave': createRoom('cave', 'Caverna Escura', 10, 8,
+    [
+      { id: 'rock1', type: 'rock', position: { x: 3, y: 2 }, rotation: 0 },
+      { id: 'rock2', type: 'rock', position: { x: 7, y: 3 }, rotation: 0 },
+      { id: 'rock3', type: 'rock', position: { x: 5, y: 6 }, rotation: 0 },
+      { id: 'torch-c1', type: 'torch', position: { x: 1, y: 1 }, rotation: 0 },
+      { id: 'chest-cave', type: 'chest', position: { x: 8, y: 1 }, rotation: 0 },
+    ],
+    [
+      { id: 'portal-forest', position: { x: 1, y: 5 }, targetRoomId: 'forest', targetPosition: { x: 11, y: 8 }, label: '← Floresta' },
+    ]
+  ),
 
-  'cellar': createRoom('cellar', 'Porão da Taverna', 10, 8, [
-    { id: 'barrel-c1', type: 'barrel', position: { x: 2, y: 2 }, rotation: 0 },
-    { id: 'barrel-c2', type: 'barrel', position: { x: 3, y: 2 }, rotation: 0 },
-    { id: 'barrel-c3', type: 'barrel', position: { x: 2, y: 3 }, rotation: 0 },
-    { id: 'chest-cellar', type: 'chest', position: { x: 7, y: 5 }, rotation: 0 },
-    { id: 'torch-cellar', type: 'torch', position: { x: 1, y: 1 }, rotation: 0 },
-  ], [
-    { id: 'portal-tavern', position: { x: 8, y: 3 }, targetRoomId: 'tavern', targetPosition: { x: 2, y: 5 }, label: '↑ Taverna' },
-  ]),
+  // ----- LOJA -----
+  'shop': createRoom('shop', 'Loja de Itens', 10, 8,
+    [
+      { id: 'counter', type: 'table', position: { x: 5, y: 2 }, rotation: 0 },
+      { id: 'shelf1', type: 'shelf', position: { x: 2, y: 1 }, rotation: 0 },
+      { id: 'shelf2', type: 'shelf', position: { x: 8, y: 1 }, rotation: 0 },
+      { id: 'barrel-shop', type: 'barrel', position: { x: 1, y: 6 }, rotation: 0 },
+      { id: 'chest-shop', type: 'chest', position: { x: 8, y: 6 }, rotation: 0 },
+    ],
+    [
+      { id: 'portal-town', position: { x: 5, y: 7 }, targetRoomId: 'town-square', targetPosition: { x: 2, y: 6 }, label: '← Praça' },
+    ]
+  ),
 
-  'dungeon-entrance': createRoom('dungeon-entrance', 'Entrada da Masmorra', 12, 10, [
-    { id: 'skull1', type: 'skull', position: { x: 2, y: 2 }, rotation: 0 },
-    { id: 'skull2', type: 'skull', position: { x: 9, y: 2 }, rotation: 0 },
-    { id: 'torch-d1', type: 'torch', position: { x: 1, y: 4 }, rotation: 0 },
-    { id: 'torch-d2', type: 'torch', position: { x: 10, y: 4 }, rotation: 0 },
-    { id: 'chest-dung', type: 'chest', position: { x: 5, y: 7 }, rotation: 0 },
-    { id: 'rock-d1', type: 'rock', position: { x: 3, y: 5 }, rotation: 0 },
-    { id: 'rock-d2', type: 'rock', position: { x: 8, y: 6 }, rotation: 0 },
-  ], [
-    { id: 'portal-town', position: { x: 5, y: 1 }, targetRoomId: 'town-square', targetPosition: { x: 8, y: 10 }, label: '↑ Praça' },
-  ]),
+  // ----- PORÃO -----
+  'cellar': createRoom('cellar', 'Porão da Taverna', 10, 8,
+    [
+      { id: 'barrel-c1', type: 'barrel', position: { x: 2, y: 2 }, rotation: 0 },
+      { id: 'barrel-c2', type: 'barrel', position: { x: 3, y: 2 }, rotation: 0 },
+      { id: 'barrel-c3', type: 'barrel', position: { x: 2, y: 3 }, rotation: 0 },
+      { id: 'chest-cellar', type: 'chest', position: { x: 7, y: 5 }, rotation: 0 },
+      { id: 'torch-cellar', type: 'torch', position: { x: 1, y: 1 }, rotation: 0 },
+    ],
+    [
+      { id: 'portal-tavern', position: { x: 8, y: 3 }, targetRoomId: 'tavern', targetPosition: { x: 2, y: 5 }, label: '↑ Taverna' },
+    ]
+  ),
+
+  // ----- ENTRADA DA MASMORRA -----
+  'dungeon-entrance': createRoom('dungeon-entrance', 'Entrada da Masmorra', 12, 10,
+    [
+      { id: 'skull1', type: 'skull', position: { x: 2, y: 2 }, rotation: 0 },
+      { id: 'skull2', type: 'skull', position: { x: 9, y: 2 }, rotation: 0 },
+      { id: 'torch-d1', type: 'torch', position: { x: 1, y: 4 }, rotation: 0 },
+      { id: 'torch-d2', type: 'torch', position: { x: 10, y: 4 }, rotation: 0 },
+      { id: 'chest-dung', type: 'chest', position: { x: 5, y: 7 }, rotation: 0 },
+      { id: 'rock-d1', type: 'rock', position: { x: 3, y: 5 }, rotation: 0 },
+      { id: 'rock-d2', type: 'rock', position: { x: 8, y: 6 }, rotation: 0 },
+    ],
+    [
+      { id: 'portal-town', position: { x: 5, y: 1 }, targetRoomId: 'town-square', targetPosition: { x: 8, y: 10 }, label: '↑ Praça' },
+    ]
+  ),
 };
 
+/**
+ * Itens iniciais que o jogador recebe ao entrar no jogo.
+ */
 export const INITIAL_ITEMS: InventoryItem[] = [
   { id: '1', name: 'Poção de Vida', icon: '🧪', quantity: 5, rarity: 'common', type: 'consumable', effect: { health: 50 } },
   { id: '2', name: 'Poção de Mana', icon: '💧', quantity: 3, rarity: 'common', type: 'consumable', effect: { mana: 30 } },
@@ -119,15 +171,19 @@ export const INITIAL_ITEMS: InventoryItem[] = [
   { id: '8', name: 'Amuleto Antigo', icon: '📿', quantity: 1, rarity: 'epic', type: 'equipment', effect: { health: 100, mana: 50 } },
 ];
 
+/**
+ * Dados dos NPCs distribuídos pelas salas.
+ * Cada chave corresponde ao ID da sala.
+ */
 export const NPC_DATA = {
   'tavern': [
     {
       id: 'npc-barkeeper',
-      name: 'Barkeeper',
+      name: 'Bark',
       position: { x: 6, y: 2 },
       direction: 'down' as const,
       isWalking: false,
-      outfit: { body: '#8B4513', hair: '#2F1810', clothes: '#4A3728' },
+      outfit: { body: '#8B4511', hair: '#2F1310', clothes: '#4A3628' },
       level: 50,
       health: 1000,
       maxHealth: 1000,
@@ -135,6 +191,7 @@ export const NPC_DATA = {
       maxMana: 500,
     },
   ],
+
   'town-square': [
     {
       id: 'npc-guard',
@@ -163,6 +220,7 @@ export const NPC_DATA = {
       maxMana: 100,
     },
   ],
+
   'forest': [
     {
       id: 'npc-hunter',
@@ -178,6 +236,7 @@ export const NPC_DATA = {
       maxMana: 150,
     },
   ],
+
   'shop': [
     {
       id: 'npc-shopkeeper',
@@ -193,6 +252,7 @@ export const NPC_DATA = {
       maxMana: 300,
     },
   ],
+
   'dungeon-entrance': [
     {
       id: 'npc-skeleton',
