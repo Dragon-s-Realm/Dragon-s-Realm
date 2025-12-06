@@ -23,10 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 
-# code font game
-src/components/game/
-src/components/game/ui
-src/data
-src/hooks
-public
-types
